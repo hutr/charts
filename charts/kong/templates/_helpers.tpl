@@ -96,6 +96,64 @@ spec:
 {{- end -}}
 
 {{/*
+Create Service resource for a Kong service
+*/}}
+{{- define "kong.service" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "kong.fullname" . }}-{{ .name }}
+  namespace: {{ template "kong.namespace" . }}
+  {{- if .annotations }}
+  annotations:
+  {{- range $key, $value := .annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  labels:
+    {{- include "kong.metaLabels" . | nindent 4 }}
+spec:
+  type: {{ .type }}
+  {{- if eq .type "LoadBalancer" }}
+  {{- if .loadBalancerIP }}
+  loadBalancerIP: {{ .loadBalancerIP }}
+  {{- end }}
+  {{- if .loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+  {{- range $cidr := .loadBalancerSourceRanges }}
+  - {{ $cidr }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+  externalIPs:
+  {{- range $ip := .externalIPs }}
+  - {{ $ip }}
+  {{- end }}
+  ports:
+  {{- if .http.enabled }}
+  - name: kong-{{ .name }}
+    port: {{ .http.servicePort }}
+    targetPort: {{ .http.containerPort }}
+  {{- if (and (eq .type "NodePort") (not (empty .http.nodePort))) }}
+    nodePort: {{ .http.nodePort }}
+  {{- end }}
+    protocol: TCP
+  {{- end }}
+  {{- if .tls.enabled }}
+  - name: kong-{{ .name }}-tls
+    port: {{ .tls.servicePort }}
+    targetPort: {{ .tls.containerPort }}
+  {{- if (and (eq .type "NodePort") (not (empty .tls.nodePort))) }}
+    nodePort: {{ .tls.nodePort }}
+  {{- end }}
+    protocol: TCP
+  {{- end }}
+  selector:
+    {{- include "kong.selectorLabels" . | nindent 4 }}
+{{- end -}}
+
+
+{{/*
 Create KONG_SERVICE_LISTEN strings
 Generic tool for creating KONG_PROXY_LISTEN, KONG_ADMIN_LISTEN, etc.
 */}}
