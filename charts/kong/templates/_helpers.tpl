@@ -57,6 +57,45 @@ Create the name of the service account to use
 {{- end -}}
 
 {{/*
+Create Ingress resource for a Kong service
+*/}}
+{{- define "kong.ingress" -}}
+{{- $fullName := include "kong.fullname" -}}
+{{- $servicePort := include "kong.ingress.servicePort" }}
+{{- $path := .ingress.path -}}
+{{- $tls := .ingress.tls -}}
+{{- $hostname := .ingress.hostname -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-{{ .serviceName }}
+  namespace: {{ template "kong.namespace" . }}
+  labels:
+    {{- include "kong.metaLabels" . | nindent 4 }}
+  {{- if .ingress.annotations }}
+  annotations:
+  {{- range $key, $value := .ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+spec:
+  rules:
+  - host: {{ $hostname }}
+    http:
+      paths:
+        - path: {{ $path }}
+          backend:
+            serviceName: {{ $fullname }}-{{ .serviceName }}
+            servicePort: {{ $servicePort }}
+  {{- if $tls }}
+  tls:
+  - hosts:
+    - {{ $hostname }}
+    secretName: {{ $tls }}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 Create KONG_SERVICE_LISTEN strings
 Generic tool for creating KONG_PROXY_LISTEN, KONG_ADMIN_LISTEN, etc.
 */}}
