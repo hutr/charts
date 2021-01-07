@@ -13,8 +13,8 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end -}}
 
 {{- define "kong.fullname" -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- $name := default $.Chart.Name $.Values.nameOverride -}}
+{{- printf "%s-%s" $.Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "kong.chart" -}}
@@ -60,24 +60,22 @@ Create the name of the service account to use
 Create Ingress resource for a Kong service
 */}}
 {{- define "kong.ingress" -}}
-{{- $fullName := include "kong.fullname" -}}
-{{- $servicePort := include "kong.ingress.servicePort" }}
+{{- $servicePort := include "kong.ingress.servicePort" . }}
 {{- $path := .ingress.path -}}
-{{- $tls := .ingress.tls -}}
 {{- $hostname := .ingress.hostname -}}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: {{ $fullname }}-{{ .serviceName }}
-  namespace: {{ template "kong.namespace" . }}
+  name: {{ .fullName }}-{{ .serviceName }}
+  namespace: {{ .namespace }}
   labels:
-    {{- include "kong.metaLabels" . | nindent 4 }}
-  {{- if .ingress.annotations }}
+   {{- .metaLabels | nindent 4 }}
+ {{- if .ingress.annotations }}
   annotations:
-  {{- range $key, $value := .ingress.annotations }}
+ {{- range $key, $value := .ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
-  {{- end }}
-  {{- end }}
+ {{- end }}
+ {{- end }}
 spec:
   rules:
   - host: {{ $hostname }}
@@ -85,13 +83,13 @@ spec:
       paths:
         - path: {{ $path }}
           backend:
-            serviceName: {{ $fullname }}-{{ .serviceName }}
+            serviceName: {{ .fullName }}-{{ .serviceName }}
             servicePort: {{ $servicePort }}
-  {{- if $tls }}
+ {{- if (hasKey .ingress "tls") }}
   tls:
   - hosts:
     - {{ $hostname }}
-    secretName: {{ $tls }}
+    secretName: {{ .ingress.tls }}
   {{- end -}}
 {{- end -}}
 
@@ -102,8 +100,8 @@ Create Service resource for a Kong service
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "kong.fullname" . }}-{{ .name }}
-  namespace: {{ template "kong.namespace" . }}
+  name: {{ .fullName }}-{{ .serviceName }}
+  namespace: {{ .namespace }}
   {{- if .annotations }}
   annotations:
   {{- range $key, $value := .annotations }}
@@ -111,7 +109,7 @@ metadata:
   {{- end }}
   {{- end }}
   labels:
-    {{- include "kong.metaLabels" . | nindent 4 }}
+    {{- .metaLabels | nindent 4 }}
 spec:
   type: {{ .type }}
   {{- if eq .type "LoadBalancer" }}
@@ -131,7 +129,7 @@ spec:
   {{- end }}
   ports:
   {{- if .http.enabled }}
-  - name: kong-{{ .name }}
+  - name: kong-{{ .serviceName }}
     port: {{ .http.servicePort }}
     targetPort: {{ .http.containerPort }}
   {{- if (and (eq .type "NodePort") (not (empty .http.nodePort))) }}
@@ -140,7 +138,7 @@ spec:
     protocol: TCP
   {{- end }}
   {{- if .tls.enabled }}
-  - name: kong-{{ .name }}-tls
+  - name: kong-{{ .serviceName }}-tls
     port: {{ .tls.servicePort }}
     targetPort: {{ .tls.containerPort }}
   {{- if (and (eq .type "NodePort") (not (empty .tls.nodePort))) }}
@@ -149,7 +147,7 @@ spec:
     protocol: TCP
   {{- end }}
   selector:
-    {{- include "kong.selectorLabels" . | nindent 4 }}
+    {{- .selectorLabels | nindent 4 }}
 {{- end -}}
 
 
