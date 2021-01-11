@@ -13,8 +13,8 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end -}}
 
 {{- define "kong.fullname" -}}
-{{- $name := default $.Chart.Name $.Values.nameOverride -}}
-{{- printf "%s-%s" $.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "kong.chart" -}}
@@ -128,6 +128,7 @@ spec:
   - {{ $ip }}
   {{- end }}
   ports:
+  {{- if .http }}
   {{- if .http.enabled }}
   - name: kong-{{ .serviceName }}
     port: {{ .http.servicePort }}
@@ -137,6 +138,7 @@ spec:
   {{- end }}
     protocol: TCP
   {{- end }}
+  {{- end }}
   {{- if .tls.enabled }}
   - name: kong-{{ .serviceName }}-tls
     port: {{ .tls.servicePort }}
@@ -145,6 +147,23 @@ spec:
     nodePort: {{ .tls.nodePort }}
   {{- end }}
     protocol: TCP
+  {{- end }}
+  {{- if (hasKey . "stream") }}
+  {{- range .stream }}
+  - name: stream-{{ .containerPort }}
+    port: {{ .servicePort }}
+    targetPort: {{ .containerPort }}
+    {{- if (and (or (eq $.type "LoadBalancer") (eq $.type "NodePort")) (not (empty .nodePort))) }}
+    nodePort: {{ .nodePort }}
+    {{- end }}
+    protocol: TCP
+  {{- end }}
+  {{- end }}
+  {{- if .externalTrafficPolicy }}
+  externalTrafficPolicy: {{ .externalTrafficPolicy }}
+  {{- end }}
+  {{- if .clusterIP }}
+  clusterIP: {{ .clusterIP }}
   {{- end }}
   selector:
     {{- .selectorLabels | nindent 4 }}
