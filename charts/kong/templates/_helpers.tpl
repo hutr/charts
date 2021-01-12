@@ -123,7 +123,7 @@ spec:
   {{- end }}
   {{- end }}
   {{- end }}
-  {{- if .externalIPs -}}
+  {{- if .externalIPs }}
   externalIPs:
   {{- range $ip := .externalIPs }}
   - {{ $ip }}
@@ -135,7 +135,7 @@ spec:
   - name: kong-{{ .serviceName }}
     port: {{ .http.servicePort }}
     targetPort: {{ .http.containerPort }}
-  {{- if (and (eq .type "NodePort") (not (empty .http.nodePort))) }}
+  {{- if (and (or (eq .type "LoadBalancer") (eq .type "NodePort")) (not (empty .http.nodePort))) }}
     nodePort: {{ .http.nodePort }}
   {{- end }}
     protocol: TCP
@@ -144,8 +144,8 @@ spec:
   {{- if .tls.enabled }}
   - name: kong-{{ .serviceName }}-tls
     port: {{ .tls.servicePort }}
-    targetPort: {{ .tls.containerPort }}
-  {{- if (and (eq .type "NodePort") (not (empty .tls.nodePort))) }}
+    targetPort: {{ .tls.overrideServiceTargetPort | default .tls.containerPort }}
+  {{- if (and (or (eq .type "LoadBalancer") (eq .type "NodePort")) (not (empty .tls.nodePort))) }}
     nodePort: {{ .tls.nodePort }}
   {{- end }}
     protocol: TCP
