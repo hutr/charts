@@ -161,8 +161,6 @@ cluster:
 
   type: ClusterIP
 
-  externalIPs: []
-
 # Specify Kong proxy service configuration
 proxy:
   # Enable creating a Kubernetes service for the proxy
@@ -228,7 +226,8 @@ proxy:
     # Ingress path.
     path: /
 
-  externalIPs: []
+  # Optionally specify a static load balancer IP.
+  # loadBalancerIP:
 
 # Custom Kong plugins can be loaded into Kong by mounting the plugin code
 # into the file-system of Kong container.
@@ -643,8 +642,6 @@ manager:
     # Ingress path.
     path: /
 
-  externalIPs: []
-
 portal:
   # Enable creating a Kubernetes service for the Developer Portal
   enabled: true
@@ -686,8 +683,6 @@ portal:
     annotations: {}
     # Ingress path.
     path: /
-
-  externalIPs: []
 
 portalapi:
   # Enable creating a Kubernetes service for the Developer Portal API
@@ -731,8 +726,6 @@ portalapi:
     # Ingress path.
     path: /
 
-  externalIPs: []
-
 clustertelemetry:
   enabled: false
   # If you want to specify annotations for the cluster telemetry service, uncomment the following
@@ -747,8 +740,6 @@ clustertelemetry:
     parameters: []
 
   type: ClusterIP
-
-  externalIPs: []
 
 extraConfigMaps: []
 # extraConfigMaps:

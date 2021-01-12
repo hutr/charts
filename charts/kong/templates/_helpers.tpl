@@ -123,9 +123,11 @@ spec:
   {{- end }}
   {{- end }}
   {{- end }}
+  {{- if .externalIPs -}}
   externalIPs:
   {{- range $ip := .externalIPs }}
   - {{ $ip }}
+  {{- end -}}
   {{- end }}
   ports:
   {{- if .http }}
